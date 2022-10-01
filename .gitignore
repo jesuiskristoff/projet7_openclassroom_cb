@@ -3,3 +3,4 @@ home-credit-default-risk
 __pycache__
 .idea
 data
+models

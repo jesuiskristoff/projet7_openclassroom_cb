@@ -8,6 +8,8 @@ Je suis Data Scientist au sein d'une **société financière**, nommée "Prêt �
 
 <img src=https://user.oc-static.com/upload/2019/02/25/15510866018677_logo%20projet%20fintech.png>
 
+## Objectifs / Données / Mission
+
 Les **objectifs** à atteindre dans le cadre de ce projet centré sur le domaine bancaire de la datascience sont nombreux.
 
 1. Mettre en œuvre un outil de **“scoring crédit”** pour calculer la probabilité qu’un client rembourse son crédit, puis classifie la demande en crédit accordé ou refusé. Elle souhaite donc **développer un algorithme de classification** en s’appuyant sur des sources de données variées.
@@ -25,5 +27,5 @@ Ce repository a pour objectif de centraliser les différents rendus attendus dan
 
 * Un dossier concernant la **Préparation des données** et le travail de **Modélisation** : `cleaning_filtering_modelisation`
     > Il sera nécessaire de créer un dossier `home-credit-default-risk` dans ce dossier dans lequel dézipper le contenu des données récupérées via le lien ci-dessus.
-* Un dossier contenant la partie API Flask
-* Un dossier contenant la partie Dashboard
+* Un dossier contenant la partie API Flask : `api_flask`
+* Un dossier contenant la partie Dashboard : `dashboard_streamlit`
