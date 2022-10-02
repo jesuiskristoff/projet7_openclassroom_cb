@@ -362,18 +362,23 @@ def dashboard_layout():
         unsafe_allow_html=True,
     )  # Un peu de style CSS pour garantir un fond blanc sur les expander (graphiques SHAP mieux intégrés !)
     create_header_section(header_section)
-    container_data, container_predict = create_predict_section(predict_section)
-    display_customer_selectbox()
-    display_threshold_slider()
-    display_customer_data(container_data)
-    display_feature_selectbox()
-    new_threshold, new_customer_id = display_customer_predict(container_predict)
-    expander_local, expander_global, expander_feat = create_interp_section(interp_section)
-    new_customer_id = display_interp_local(expander_local)
-    display_interp_global(expander_global)
-    display_interp_feature(expander_feat)
-    st.session_state['used_customer_id'] = new_customer_id  # Mise à jour de l'identifiant du client précédent
-    st.session_state['used_threshold'] = new_threshold  # Mise à jour du seuil précédent
+
+    try:
+        container_data, container_predict = create_predict_section(predict_section)
+        display_customer_selectbox()
+        display_threshold_slider()
+        display_customer_data(container_data)
+        display_feature_selectbox()
+        new_threshold, new_customer_id = display_customer_predict(container_predict)
+        expander_local, expander_global, expander_feat = create_interp_section(interp_section)
+        new_customer_id = display_interp_local(expander_local)
+        display_interp_global(expander_global)
+        display_interp_feature(expander_feat)
+        st.session_state['used_customer_id'] = new_customer_id  # Mise à jour de l'identifiant du client précédent
+        st.session_state['used_threshold'] = new_threshold  # Mise à jour du seuil précédent
+    except Exception as e:
+        display_message(message=f"Quelque chose s'est mal passé. Un problème a pu survenir avec l'API. Erreur : {e}",
+                        type_='error', wait=10)
 
 
 # Appel de la fonction permettant de générer le tableau de bord !
