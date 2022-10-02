@@ -19,8 +19,8 @@ def load(filename, filepath='./'):
     with open(f'{filepath}/{filename}.pickle', 'rb') as f:
         return pickle.load(f)
 
-# Chargement des données des clients, du modèle et de l'explainer SHAP
 
+# Chargement des données des clients, du modèle et de l'explainer SHAP
 data = load(app.config["DATA_FILENAME"], f'./{app.config["DATA_LOCATION"]}')
 
 # Remarque sur les données clients : dans un cas réel d'un environnement de production, les données seraient bien
@@ -91,7 +91,8 @@ def customer_controller(id_):
             raise InvalidUsage(message="Le client n'a pas été trouvé.", status_code=404)
 
         if id_ == -1:  # on veut récupérer la liste des clients
-            return Response(message="Identifiants de tous les clients récupérés.", status_code=200, data=customer_ids).json
+            return Response(message="Identifiants de tous les clients récupérés.", status_code=200,
+                            data=customer_ids).json
         else:  # on veut récupérer les données d'un client
             customer_data = data_customers[data_customers.index == id_].T.to_dict()
             return Response(message="Données du client récupérées.", status_code=200, data=customer_data).json
@@ -181,7 +182,8 @@ def interp_controller(id_):
 
             interp_data = {
                 "interp_data": sampled_data.to_dict(),  # renvoie les données pour l'interprétabilité globale
-                "shap_values": explainer.shap_values(sampled_data, check_additivity=False).tolist(),  # renvoie les valeurs de Shapely
+                "shap_values": explainer.shap_values(sampled_data, check_additivity=False).tolist(),
+                # renvoie les valeurs de Shapely
                 "expected_value": explainer.expected_value  # renvoie la valeur de base
             }
 
@@ -196,7 +198,8 @@ def interp_controller(id_):
             interp_data = {
                 "id_": id_,
                 "interp_data": customer_data.to_dict(),  # renvoie les données pour l'interprétabilité locale
-                "shap_values": explainer.shap_values(customer_data, check_additivity=False).tolist(),  # renvoie les valeurs de Shapely
+                "shap_values": explainer.shap_values(customer_data, check_additivity=False).tolist(),
+                # renvoie les valeurs de Shapely
                 "expected_value": explainer.expected_value  # renvoie la valeur de base
             }
 
