@@ -24,8 +24,38 @@ minutes si on récupérait toutes les données des clients).
 ## Précision sur les données
 
 Dans le cadre de ce projet et pour le mener à bien facilement, les données seront stockées sur le serveur hébergeant 
-l'application.
+l'application et sur github.
 
 En situation réelle dans une phase de mise en production, les données seraient bien entendu **stockées dans 
 une base de données ou sous forme de fichier crypté** dans un endroit sécurisé pour être **conforme
 à la RGPD** et garantir la **protection** des données des clients.
+
+## Lancement de l'API en local
+
+- Ouvrir un terminal et se placer dans le dossier du projet
+- Lancer l'API avec la commande `python run.py`
+
+## Déployer l'API sur Heroku
+
+- Suivre les étapes d'installation de l'application
+- Mettre les fichiers de l'application sur votre dépôt git
+
+- Créer un compte sur [Heroku](https://signup.heroku.com/)
+- Installer [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli)
+
+- Se connecter à Heroku avec la commande `heroku login`
+- Créer une nouvelle application avec la commande `heroku create --buildpack https://github.com/infinitly/heroku-
+buildpack-git-lfs.git`
+
+- Depuis votre tableau de bord Heroku, dans la section `Settings -> Config Vars` ajoutez les variables d'environnement 
+suivantes :
+  - `GIT_LFS_REPOSITORY` : l'url https de votre dépôt git
+  - `WEB_CONCURRENCY` : La valeur 1
+
+- Depuis votre tableau de bord Heroku, dans la section `Deploy` connecter votre dépôt git à votre application 
+Heroku puis activer le déploiement automatique et appuyer sur `Deploy Branch` pour la première fois.
+
+- Retourner dans votre tableau de bord Heroku, dans la section `Resources` ajouter un nouveau dyno de type `worker` 
+et démarrer le dyno.
+
+- Votre application est maintenant déployée sur Heroku, vous pouvez la tester en allant sur l'url de votre application.
