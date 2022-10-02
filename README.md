@@ -53,7 +53,7 @@ faire un commit et un push comme d'habitude.
 Ce problème n'aurait normalement pas lieu dans un cas réel de mise en production d'un service comme celui-ci. 
 Les données ne seraient pas push sur github mais stockées dans un endroit sécurisé pour la confidentialité des clients.
 
-## Le déploiment de l'application
+## Le déploiement de l'application
 
 ### Prérequis
 
@@ -69,7 +69,7 @@ Les données ne seraient pas push sur github mais stockées dans un endroit séc
 - Créer un dossier `.streamlit` dans le dossier `dashboard_streamlit`
 - Créer un fichier `config.toml` dans le dossier `.streamlit` avec le contenu suivant :
 ```toml
-API_BASE_URL = 'http://127.0.0.1:3000'
+API_BASE_URL = 'http://127.0.0.1:5000'
 DEF_N_CUSTOMERS = 1000
 DEF_THRESHOLD = 0.6
 ```
