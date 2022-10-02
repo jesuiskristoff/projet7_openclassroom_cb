@@ -1,3 +1,5 @@
+import os.path
+
 import pandas as pd
 import flask
 from flask import Flask, request, jsonify
@@ -17,17 +19,17 @@ def load(filename, filepath='./'):
     with open(f'{filepath}/{filename}.pickle', 'rb') as f:
         return pickle.load(f)
 
-
 # Chargement des données des clients, du modèle et de l'explainer SHAP
-data = load(app.config["DATA_FILENAME"], f'../{app.config["DATA_LOCATION"]}')
+
+data = load(app.config["DATA_FILENAME"], f'./{app.config["DATA_LOCATION"]}')
 
 # Remarque sur les données clients : dans un cas réel d'un environnement de production, les données seraient bien
 # entendu stockées dans une base de données ou sous forme de fichier crypté dans un endroit sécurisé pour être conforme
 # à la RGPD et garantir la protection des données des clients. Ici, les données sont stockées au même endoit que
 # l'application.
 
-pipeline = load(app.config["MODEL_FILENAME"], f'../{app.config["MODEL_LOCATION"]}')
-explainer = load(app.config["EXPLAINER_FILENAME"], f'../{app.config["MODEL_LOCATION"]}')
+pipeline = load(app.config["MODEL_FILENAME"], f'./{app.config["MODEL_LOCATION"]}')
+explainer = load(app.config["EXPLAINER_FILENAME"], f'./{app.config["MODEL_LOCATION"]}')
 
 # Traitement des données pour les préparer à leur utilisation dans les différents contextes de l'application
 data.index = data['SK_ID_CURR']
@@ -216,8 +218,3 @@ def handle_invalid_usage(error):
     response = jsonify(error.to_dict())
     response.status_code = error.status_code
     return response
-
-
-# Lancement de l'application Flask sur le port contenu dans le fichier de configuration
-if __name__ == "__main__":
-    app.run(debug=False, port=app.config["PORT"])
