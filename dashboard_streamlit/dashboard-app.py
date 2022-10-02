@@ -290,8 +290,7 @@ def create_header_section(element):
     """, unsafe_allow_html=True)
 
     col1, col2 = element.columns((3, 1))
-
-    col2.image("./assets/logo.png", width=200)
+    col2.image("https://user.oc-static.com/upload/2019/02/25/15510866018677_logo%20projet%20fintech.png", width=200)
     container1 = col1.container()
 
     container1.title("Tableau de bord / Évaluation client")
