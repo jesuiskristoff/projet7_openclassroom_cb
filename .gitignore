@@ -2,8 +2,9 @@ home-credit-default-risk
 .ipynb_checkpoints
 __pycache__
 .idea
-data
-models
+# data
+# models
+cleaning_filtering_modelisation/models/models.pickle
 *.docx
 *.pptx
 .streamlit
