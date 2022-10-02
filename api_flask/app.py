@@ -1,5 +1,3 @@
-import os.path
-
 import pandas as pd
 import flask
 from flask import Flask, request, jsonify
@@ -96,6 +94,10 @@ def customer_controller(id_):
         else:  # on veut récupérer les données d'un client
             customer_data = data_customers[data_customers.index == id_].T.to_dict()
             return Response(message="Données du client récupérées.", status_code=200, data=customer_data).json
+
+    except InvalidUsage as e:
+        raise InvalidUsage(message=e.message, status_code=e.status_code)
+
     except Exception as e:
         raise InvalidUsage(message=f"Quelque chose s'est mal passé: {e}.", status_code=500)
 
@@ -138,6 +140,10 @@ def predict_controller(id_):
                               "predict": y_predict,  # renvoie la décision d'accorder le prêt ou non
                               "probability": y_probability  # renvoie la probabilité de ne pas rembourser le prêt
                               }).json
+
+    except InvalidUsage as e:
+        raise InvalidUsage(message=e.message, status_code=e.status_code)
+
     except Exception as e:
         raise InvalidUsage(message=f"Quelque chose s'est mal passé: {e}.", status_code=500)
 
@@ -206,6 +212,10 @@ def interp_controller(id_):
             return Response(message="Données nécessaires à l'interprétabilité locale récupérées.",
                             status_code=200,
                             data=interp_data).json
+
+    except InvalidUsage as e:
+        raise InvalidUsage(message=e.message, status_code=e.status_code)
+
     except Exception as e:
         raise InvalidUsage(message=f"Quelque chose s'est mal passé: {e}.", status_code=500)
 
