@@ -4,13 +4,17 @@ import requests
 
 # Les fonctions faisant appel à l'API ont été mise dans un fichier séparé pour plus de clarté !
 
+API_BASE_URL = st.secrets['API_BASE_URL']
+DEF_N_CUSTOMERS = st.secrets['DEF_N_CUSTOMERS']
+
+
 @st.cache(show_spinner=False)
 def get_customers():
     """
     Fonction utilisant la route /customer/-1 pour récupérer la liste des clients.
     """
     try:
-        response = requests.get(f"{st.secrets['API_BASE_URL']}/customer/-1").json()
+        response = requests.get(f"{API_BASE_URL}/customer/-1").json()
 
         if 'erreur' in response:
             return [], 'error', f"Erreur: {response['erreur']}"
@@ -27,7 +31,7 @@ def get_data_from_customer(id_):
     Fonction utilisant la route /customer/<id_> pour récupérer les données d'un client.
     """
     try:
-        response = requests.get(f"{st.secrets['API_BASE_URL']}/customer/{id_}").json()
+        response = requests.get(f"{API_BASE_URL}/customer/{id_}").json()
 
         if 'erreur' in response:
             return {}, 'error', f"Erreur: {response['erreur']}"
@@ -48,7 +52,7 @@ def predict_customer(id_, threshold):
     """
     try:
 
-        response = requests.get(f"{st.secrets['API_BASE_URL']}/predict/{id_}", params={"threshold": threshold}).json()
+        response = requests.get(f"{API_BASE_URL}/predict/{id_}", params={"threshold": threshold}).json()
 
         if 'erreur' in response:
             return {}, 'error', f"Erreur: {response['erreur']}"
@@ -66,8 +70,8 @@ def interp_global():
     """
     try:
 
-        response = requests.get(f"{st.secrets['API_BASE_URL']}/interp/-1",
-                                params={"n_customers": st.secrets['DEF_N_CUSTOMERS']}).json()
+        response = requests.get(f"{API_BASE_URL}/interp/-1",
+                                params={"n_customers": DEF_N_CUSTOMERS}).json()
 
         if 'erreur' in response:
             return {}, 'error', f"Erreur: {response['erreur']}"
@@ -87,7 +91,7 @@ def interp_local(id_):
     """
     try:
 
-        response = requests.get(f"{st.secrets['API_BASE_URL']}/interp/{id_}").json()
+        response = requests.get(f"{API_BASE_URL}/interp/{id_}").json()
 
         if 'erreur' in response:
             return {}, 'error', f"Erreur: {response['erreur']}"
