@@ -1,27 +1,45 @@
 import streamlit as st
 from streamlit_shap import st_shap
-import requests
+
 import pandas as pd
 import numpy as np
 import time
 import shap
 
-from config import *
-from utils import gauge_plot, feature_boxplot, convert_choice_to_threshold, convert_threshold_to_choice, threshold_choices
 
+from utils import *
+from api_functions import *
+
+# Première action à réaliser dans le fichier de l'application Steamlit
 st.set_page_config(page_title="Prêt à dépenser !", page_icon="💳", layout="wide")
 
-
+# Ce placeholder va permettre d'afficher toujours au même endroit les messages renvoyés par l'API
 placeholder = st.sidebar.empty()
+
+# Cette instruction va permettre de s'assurer que les graphiques SHAP apparaitront correctement sur le dashboard
 shap.initjs()
 
 
 def create_session_key(k, v):
+    """
+    Permet d'initialiser une clé dans le session_state avec une valeur
+    :param k: str Nom de la clé à initialiser
+    :param v: any Valeur de la clé à l'initialaisation
+    :return:
+    """
     if k not in st.session_state:
         st.session_state[k] = v
 
 
 def display_message(message, type_, wait=3):
+    """
+    Permet d'afficher un message provenant d'une réponse de l'API
+    Le message sera différent selon le "type_" fourni (success, warning, error...)
+    Le paramètre "wait" permet de s'assurer que le message soit visible quelques secondes avant de disparaître.
+    :param message: str
+    :param type_: str
+    :param wait: int (durée en secondes)
+    """
     global placeholder
     placeholder.__getattribute__(type_)(message)
     time.sleep(wait)
@@ -29,19 +47,26 @@ def display_message(message, type_, wait=3):
 
 
 def display_customer_selectbox():
+    """
+    Cette fonction permet d'afficher la boîte de sélection des clients après avoir récupéré la liste de leurs
+    identifiants.
+    :return:
+    """
 
-    if 'customers' not in st.session_state:
+    if 'customers' not in st.session_state:  # la liste des clients n'a pas encore été récupérée
         with st.spinner('Récupération de la liste des clients en cours...'):
-            r = get_customers()
+            r = get_customers()  # on fait appel à l'API
             if r[0]:
-                create_session_key('customer_id', r[0][0])
+                create_session_key('customer_id', r[0][0])  # on intialise la clé customer_id avec le premier
+                # identifiant
             st.sidebar.selectbox("Choisir un client", r[0],
                                  key='customer_id',
                                  help='SK_ID_CURR')
-            display_message(message=r[2], type_=r[1])
-            create_session_key('customers', r[0])
+            display_message(message=r[2], type_=r[1])  # on affiche le message de réponse provenant de l'API
+            create_session_key('customers', r[0])  # on intialise la clé customers (on garde en mémoire la liste des
+            # clients)
 
-    else:
+    else:  # la liste des clients a déjà été récupérée et stockée dans session_state
         st.sidebar.selectbox("Choisir un client",
                              st.session_state['customers'],
                              key='customer_id',
@@ -49,7 +74,11 @@ def display_customer_selectbox():
 
 
 def display_threshold_slider():
-
+    """
+    Cette fonction permet d'afficher le slider de sélection du seuil de tolérance avec les options suivantes :
+    ['Risque optimal', 'Risque modéré', 'Risque élevé'].
+    :return:
+    """
     st.sidebar.select_slider(label='Seuil de tolérance', value='Risque optimal',
                              options=['Risque optimal', 'Risque modéré', 'Risque élevé'],
                              key='threshold',
@@ -57,109 +86,57 @@ def display_threshold_slider():
 
 
 def display_feature_selectbox():
-
+    """
+    Cette fonction permet d'afficher la boîte de sélection des variables disponibles pour visualiser le positionnement
+    du client par rapport à cette variable.
+    :return:
+    """
     features = pd.DataFrame.from_dict(st.session_state['customer_data']).index.tolist()
     st.sidebar.selectbox("Choisir une variable", features, key='selected_feature',
                          help='Visualiser le positionnement du client par rapport à cette variable.')
 
 
-@st.cache(show_spinner=False)
-def get_customers():
-    try:
-        response = requests.get(f"{API_BASE_URL}/customer/-1").json()
-
-        if 'erreur' in response:
-            return [], 'error', f"Erreur: {response['erreur']}"
-        else:
-            return response['data'], 'success', response['message']
-
-    except Exception as e:
-        return [], 'error', f"Erreur: {e}"
-
-
-@st.cache(show_spinner=False)
-def get_data_from_customer(id_):
-    try:
-        response = requests.get(f"{API_BASE_URL}/customer/{id_}").json()
-
-        if 'erreur' in response:
-            return {}, 'error', f"Erreur: {response['erreur']}"
-        else:
-            return response['data'], 'success', response['message']
-
-    except Exception as e:
-        return {}, 'error', f"Erreur: {e}"
-
-
-@st.cache(show_spinner=False)
-def predict_customer(id_, threshold):
-    try:
-
-        response = requests.get(f"{API_BASE_URL}/predict/{id_}", params={"threshold": threshold}).json()
-
-        if 'erreur' in response:
-            return {}, 'error', f"Erreur: {response['erreur']}"
-        else:
-            return response['data'], 'success', response['message']
-
-    except Exception as e:
-        return {}, 'error', f"Erreur: {e}"
-
-
-@st.cache(show_spinner=False)
-def interp_global():
-    try:
-
-        response = requests.get(f"{API_BASE_URL}/interp/-1", params={"n_customers": DEF_N_CUSTOMERS}).json()
-
-        if 'erreur' in response:
-            return {}, 'error', f"Erreur: {response['erreur']}"
-        else:
-            return response['data'], 'success', response['message']
-
-    except Exception as e:
-        return {}, 'error', f"Erreur: {e}"
-
-
-@st.cache(show_spinner=False)
-def interp_local(id_):
-    try:
-
-        response = requests.get(f"{API_BASE_URL}/interp/{id_}").json()
-
-        if 'erreur' in response:
-            return {}, 'error', f"Erreur: {response['erreur']}"
-        else:
-            return response['data'], 'success', response['message']
-
-    except Exception as e:
-        return {}, 'error', f"Erreur: {e}"
-
-
 def display_customer_data(element):
+    """
+    Cette fonction va permettre d'afficher les données du client demandé.
 
+    :param element: Un élément Streamlit dans lequel ajouter d'autres éléments.
+    :return:
+    """
     customer_id = int(st.session_state['customer_id'])
 
     if 'used_customer_id' not in st.session_state:
-        create_session_key('used_customer_id', 0)
+        create_session_key('used_customer_id', 0)  # Aucun client n'a été demandé précédement
 
     used_customer_id = int(st.session_state['used_customer_id'])
 
-    if 'customer_data' in st.session_state and used_customer_id == customer_id:
+    if 'customer_data' in st.session_state and used_customer_id == customer_id:  # Les données d'un client sont déjà
+        # stockées et il n'y a pas eu de changement de client
         element.dataframe(pd.DataFrame.from_dict(st.session_state['customer_data']))
-    else:
+    else:  # un nouveau client a été selectionné
         with st.spinner(f'Récupération des données du client #{customer_id} en cours...'):
-            r = get_data_from_customer(int(customer_id))
-            element.dataframe(pd.DataFrame.from_dict(r[0]))
-            st.session_state['customer_data'] = r[0]
-            display_message(message=r[2], type_=r[1])
+            r = get_data_from_customer(int(customer_id))  # on fait appel à l'API
+            element.dataframe(pd.DataFrame.from_dict(r[0]))  # on affiche les données du client
+            st.session_state['customer_data'] = r[0]  # on stocke les données du client
+            display_message(message=r[2], type_=r[1])  # on affiche le message de réponse provenant de l'API
 
 
 def display_customer_predict(element):
+    """
+    Cette fonction va permettre d'afficher les résultats de la prédiction pour le client demandé.
 
+    :param element: Un élément Streamlit dans lequel ajouter d'autres éléments.
+    :returns new_threshold, new_customer_id: Le nouveau seuil et le nouvel identifiant client.
+    """
     def add_elements(element_, predict_, probability_, threshold_):
-        predict_data = ('refusé', "rgb(135, 10, 36)") if predict_ == 1 else ('accordé', "rgb(14, 67, 123)")
-        predict_html = f'<h2>Résultat : Le prêt est <span style="color:{predict_data[1]};">{predict_data[0]}</span> !</h2>'
+        """
+        :param element_: Un élément Streamlit dans lequel ajouter d'autres éléments.
+        :param predict_: int 0 ou 1 / Décision de prêt.
+        :param probability_: float Probabilité de non-remboursement
+        :param threshold_: float Seuil de tolérance
+        """
+        data = ('refusé', "rgb(135, 10, 36)") if predict_ == 1 else ('accordé', "rgb(14, 67, 123)")
+        predict_html = f'<h2>Décision : Le prêt est <span style="color:{data[1]};">{data[0]}</span> !</h2>'
         predict_html += f'<p>La probabilité de non-remboursement du prêt est de {round(probability_ * 100)}%.</p>'
         fig = gauge_plot(probability=probability_, threshold=threshold_)
         element_.markdown(predict_html, unsafe_allow_html=True)
@@ -168,70 +145,86 @@ def display_customer_predict(element):
     threshold_value = float(convert_choice_to_threshold(st.session_state['threshold']))
 
     if 'used_threshold' not in st.session_state:
-        create_session_key('used_threshold', '')
-    
+        create_session_key('used_threshold', '')  # Aucun seuil n'a été demandé précédement
+
     used_threshold = st.session_state['used_threshold']
     used_customer_id = int(st.session_state['used_customer_id'])
 
     new_threshold = st.session_state['threshold']
     new_customer_id = int(st.session_state['customer_id'])
-    if used_customer_id == new_customer_id and used_threshold == new_threshold:
+    if used_customer_id == new_customer_id and used_threshold == new_threshold:  # On n'a demandé ni un nouveau
+        # client ni un nouveau seuil
         add_elements(element, int(st.session_state['predict']), float(st.session_state['probability']), threshold_value)
-    else:
+    else:  # un nouveau client ou un nouveau seuil a été sélectionné
         with st.spinner(f'Prédiction pour le client #{new_customer_id} en cours...'):
-            r = predict_customer(new_customer_id, threshold_value)
+            r = predict_customer(new_customer_id, threshold_value)  # on fait appel à l'API
             if r[1] == 'success':
                 add_elements(element, int(r[0]['predict']), float(r[0]['probability']), threshold_value)
-                new_threshold = convert_threshold_to_choice(round(float(r[0]['threshold']),2))
+                new_threshold = convert_threshold_to_choice(round(float(r[0]['threshold']), 2))
                 new_customer_id = int(r[0]['id_'])
-                st.session_state['predict'] = int(r[0]['predict'])
-                st.session_state['probability'] = float(r[0]['probability'])
+                st.session_state['predict'] = int(r[0]['predict'])  # on stocke la décision renvoyée par l'API
+                st.session_state['probability'] = float(r[0]['probability'])   # on stocke la proba renvoyée par l'API
 
-            display_message(message=r[2], type_=r[1])
+            display_message(message=r[2], type_=r[1])  # on affiche le message de réponse provenant de l'API
     return new_threshold, new_customer_id
 
 
 def display_interp_global(element):
-    if 'shap_global_values' not in st.session_state:
+    """
+    Cette fonction va permettre d'afficher l'interprétabilité globale.
+
+    :param element: Un élément Streamlit dans lequel ajouter d'autres éléments.
+    """
+    if 'shap_global_values' not in st.session_state:  # On n'a pas encore récupéré les valeurs de Shapely
         with st.spinner('Interprétabilité globale en cours...'):
-            r = interp_global()
+            r = interp_global()   # on fait appel à l'API
             if r[1] == 'success':
+                # on récupère les données et on les stocke
                 shap_values = r[0]['shap_values']
                 interp_data = r[0]['interp_data']
 
                 st.session_state['shap_global_values'] = shap_values
                 st.session_state['interp_data_global'] = interp_data
 
-            display_message(message=r[2], type_=r[1])
+            display_message(message=r[2], type_=r[1])  # on affiche le message de réponse provenant de l'API
 
-    else:
+    else:  # On n'a déjà stocké les valeurs de Shapely auparavant
         shap_values = st.session_state['shap_global_values']
         interp_data = st.session_state['interp_data_global']
 
     with element:
+        # Utilisation de la librairie streamlit-shap qui gère très bien l'affichage des graphiques SHAP
         st_shap(shap.summary_plot(np.array(shap_values), pd.DataFrame.from_dict(interp_data)))
 
     texts_info = [('#FF0051', 'élevée'), ('#008BFB', 'faible')]
 
     for color, value in texts_info:
-        element.write(f'<span style="color:{color};">Cette couleur correspond à une valeur {value}.</span>',
+        element.write(f'<span style="color:{color};">Cette couleur correspond à une valeur {value} pour la '
+                      f'variable.</span>',
                       unsafe_allow_html=True)
 
 
 def display_interp_local(element):
+    """
+    Cette fonction va permettre d'afficher l'interprétabilité locale pour un client.
 
+    :param element: Un élément Streamlit dans lequel ajouter d'autres éléments.
+    :return new_customer_id: Le nouvel identifiant client.
+    """
     used_customer_id = int(st.session_state['used_customer_id'])
     new_customer_id = int(st.session_state['customer_id'])
 
-    if used_customer_id == new_customer_id and 'shap_local_values' in st.session_state:
+    if used_customer_id == new_customer_id and 'shap_local_values' in st.session_state:  # Les shap values d'un client
+        # sont déjà stockées et il n'y a pas eu de changement de client
         interp_data = st.session_state['interp_data_local']
         shap_values = st.session_state['shap_local_values']
         expected_value = st.session_state['expected_value']
 
-    else:
+    else:  # un nouveau client a été demandé
         with st.spinner(f'Interprétabilité locale pour le client #{new_customer_id} en cours...'):
-            r = interp_local(new_customer_id)
+            r = interp_local(new_customer_id)   # on fait appel à l'API
             if r[1] == 'success':
+                # on récupère les données et on les stocke
                 interp_data = r[0]['interp_data']
                 shap_values = r[0]['shap_values']
                 expected_value = float(r[0]['expected_value'])
@@ -240,7 +233,7 @@ def display_interp_local(element):
                 st.session_state['interp_data_local'] = interp_data
                 st.session_state['expected_value'] = expected_value
 
-            display_message(message=r[2], type_=r[1])
+            display_message(message=r[2], type_=r[1])  # on affiche le message de réponse provenant de l'API
 
     df_interp_data = pd.DataFrame.from_dict(interp_data)
 
@@ -250,6 +243,7 @@ def display_interp_local(element):
                               data=df_interp_data.values[0])
 
     with element:
+        # Utilisation de la librairie streamlit-shap qui gère très bien l'affichage des graphiques SHAP
         st_shap(shap.plots.waterfall(interp))
 
     texts_info = [('#FF0051', 'augmente'), ('#008BFB', 'diminue')]
@@ -262,7 +256,12 @@ def display_interp_local(element):
 
 
 def display_interp_feature(element):
+    """
+    Cette fonction va permettre d'afficher le positionnement du client par rapport à une variable choisie avec un
+    graphique boxplot.
 
+    :param element: Un élément Streamlit dans lequel ajouter d'autres éléments.
+    """
     global_data = pd.DataFrame.from_dict(st.session_state['interp_data_global'])
     local_data = pd.DataFrame.from_dict(st.session_state['interp_data_local'])
     selected_feature = st.session_state['selected_feature']
@@ -275,6 +274,13 @@ def display_interp_feature(element):
 
 
 def create_header_section(element):
+    """
+    Cette fonction va permettre de créer la section Header qui contient le titre du dashboard ainsi qu'une description
+    et le logo de la société.
+
+    :param element: Un élément Streamlit dans lequel ajouter d'autres éléments.
+    :return:
+    """
     element.write("""
             <head>
                 <meta charset="utf-8">
@@ -297,10 +303,17 @@ def create_header_section(element):
 
 
 def create_predict_section(element):
+    """
+    Cette fonction va permettre de préparer la section Predict qui contient les données et la prédiction
+    du modèle concernant le client demandé.
 
+    :param element: Un élément Streamlit dans lequel ajouter d'autres éléments.
+    :return: Les éléments "container" qui vont contenir les données et la prédiction du client
+    """
     main_container = element.container()
     if "customer_id" in st.session_state:
-        main_container.subheader(f"Voici les données et les résultats du client #{int(st.session_state['customer_id'])}")
+        main_container.subheader(
+            f"Voici les données et les résultats du client #{int(st.session_state['customer_id'])}")
     else:
         main_container.subheader(f"Voici les données et les résultats du client demandé.")
 
@@ -313,9 +326,15 @@ def create_predict_section(element):
 
 
 def create_interp_section(element):
+    """
+    Cette fonction va permettre de préparer la section Interprétabilité qui contient le positionnement du client
+    par rapport à une variable choisie ainsi que l'interprétabilité globale et locale.
 
+    :param element: Un élément Streamlit dans lequel ajouter d'autres éléments.
+    :return: Les éléments "expander" qui vont contenir les parties sur l'interprétabilité.
+    """
     main_container = element.container()
-    if "customer_id" in st.session_state:
+    if "customer_id" in st.session_state:  # Un client a déjà été demandé
         main_container.subheader(f"Quelles sont les données influentes globalement et pour le"
                                  f" client #{int(st.session_state['customer_id'])} ?")
     else:
@@ -329,16 +348,20 @@ def create_interp_section(element):
 
 
 def dashboard_layout():
-    
-    header_section = st.empty()
-    predict_section = st.empty()
-    interp_section = st.empty()
+    """
+    Cette fonction va permettre de construire le tableau de bord en garantissant que les éléments seront toujours
+    ajoutés dans le même ordre au rechargement.
+
+    """
+    header_section = st.empty()  # Création d'une section vide pour la partie Header
+    predict_section = st.empty()  # Création d'une section vide pour la partie Prediction
+    interp_section = st.empty()  # Création d'une section vide pour la partie Intreprétabilité
     st.markdown(
         """<style>
         .streamlit-expanderContent {background:white;}
         </style>""",
         unsafe_allow_html=True,
-    )
+    )  # Un peu de style CSS pour garantir un fond blanc sur les expander (graphiques SHAP mieux intégrés !)
     create_header_section(header_section)
     container_data, container_predict = create_predict_section(predict_section)
     display_customer_selectbox()
@@ -350,8 +373,9 @@ def dashboard_layout():
     new_customer_id = display_interp_local(expander_local)
     display_interp_global(expander_global)
     display_interp_feature(expander_feat)
-    st.session_state['used_customer_id'] = new_customer_id
-    st.session_state['used_threshold'] = new_threshold
+    st.session_state['used_customer_id'] = new_customer_id  # Mise à jour de l'identifiant du client précédent
+    st.session_state['used_threshold'] = new_threshold  # Mise à jour du seuil précédent
 
 
+# Appel de la fonction permettant de générer le tableau de bord !
 dashboard_layout()
