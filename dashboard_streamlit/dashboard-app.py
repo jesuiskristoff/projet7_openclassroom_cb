@@ -370,6 +370,8 @@ def dashboard_layout():
                 display_interp_feature(expander_feat)
                 st.session_state['used_customer_id'] = new_customer_id  # Mise à jour de l'identifiant du client précédent
                 st.session_state['used_threshold'] = new_threshold  # Mise à jour du seuil précédent
+        else:
+            st.subheader("Commencer en saisissant l'identifiant d'un client !")
     except Exception as e:
         display_message(message=f"Quelque chose s'est mal passé. Un problème a pu survenir avec l'API. Erreur : {e}",
                         type_='error', wait=10)
