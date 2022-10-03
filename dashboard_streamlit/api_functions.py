@@ -8,21 +8,23 @@ API_BASE_URL = st.secrets['API_BASE_URL']
 DEF_N_CUSTOMERS = st.secrets['DEF_N_CUSTOMERS']
 
 
-@st.cache(show_spinner=False)
-def get_customers():
-    """
-    Fonction utilisant la route /customer/-1 pour récupérer la liste des clients.
-    """
-    try:
-        response = requests.get(f"{API_BASE_URL}/customer/-1").json()
+# Cette fonction ci-dessous n'est plus utilisée depuis le passage d'une selectbox à un text_input pour chosir le client.
 
-        if 'erreur' in response:
-            return [], 'error', f"Erreur: {response['erreur']}"
-        else:
-            return response['data'], 'success', response['message']
-
-    except Exception as e:
-        return [], 'error', f"Erreur: {e}"
+# @st.cache(show_spinner=False)
+# def get_customers():
+#     """
+#     Fonction utilisant la route /customer/-1 pour récupérer la liste des clients.
+#     """
+#     try:
+#         response = requests.get(f"{API_BASE_URL}/customer/-1").json()
+#
+#         if 'erreur' in response:
+#             return [], 'error', f"Erreur: {response['erreur']}"
+#         else:
+#             return response['data'], 'success', response['message']
+#
+#     except Exception as e:
+#         return [], 'error', f"Erreur: {e}"
 
 
 @st.cache(show_spinner=False)

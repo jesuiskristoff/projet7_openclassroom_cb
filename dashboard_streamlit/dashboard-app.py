@@ -53,24 +53,9 @@ def display_customer_selectbox():
     :return:
     """
 
-    if 'customers' not in st.session_state:  # la liste des clients n'a pas encore été récupérée
-        with st.spinner('Récupération de la liste des clients en cours...'):
-            r = get_customers()  # on fait appel à l'API
-            if r[0]:
-                create_session_key('customer_id', r[0][0])  # on intialise la clé customer_id avec le premier
-                # identifiant
-            st.sidebar.selectbox("Choisir un client", r[0],
-                                 key='customer_id',
-                                 help='SK_ID_CURR')
-            display_message(message=r[2], type_=r[1])  # on affiche le message de réponse provenant de l'API
-            create_session_key('customers', r[0])  # on intialise la clé customers (on garde en mémoire la liste des
-            # clients)
-
-    else:  # la liste des clients a déjà été récupérée et stockée dans session_state
-        st.sidebar.selectbox("Choisir un client",
-                             st.session_state['customers'],
-                             key='customer_id',
-                             help="Correspond à l'identifiant <SK_ID_CURR>.")
+    st.sidebar.text_input("Saisir l'identifiant d'un client", value=st.session_state['customer_id'],
+                          key='customer_id',
+                          help="Correspond à l'identifiant <SK_ID_CURR>.")
 
 
 def display_threshold_slider():
@@ -101,8 +86,9 @@ def display_customer_data(element):
     Cette fonction va permettre d'afficher les données du client demandé.
 
     :param element: Un élément Streamlit dans lequel ajouter d'autres éléments.
-    :return:
+    :return: boolean Les données ont-elles été correctement récupérées ?
     """
+
     customer_id = int(st.session_state['customer_id'])
 
     if 'used_customer_id' not in st.session_state:
@@ -112,13 +98,21 @@ def display_customer_data(element):
 
     if 'customer_data' in st.session_state and used_customer_id == customer_id:  # Les données d'un client sont déjà
         # stockées et il n'y a pas eu de changement de client
+        element.subheader(f"Voici les données et les résultats du client #{customer_id}")
         element.dataframe(pd.DataFrame.from_dict(st.session_state['customer_data']))
+        return True
     else:  # un nouveau client a été selectionné
         with st.spinner(f'Récupération des données du client #{customer_id} en cours...'):
             r = get_data_from_customer(int(customer_id))  # on fait appel à l'API
-            element.dataframe(pd.DataFrame.from_dict(r[0]))  # on affiche les données du client
-            st.session_state['customer_data'] = r[0]  # on stocke les données du client
+            if r[0]:
+                element.subheader(f"Voici les données et les résultats du client #{customer_id}")
+                element.dataframe(pd.DataFrame.from_dict(r[0]))  # on affiche les données du client
+                st.session_state['customer_data'] = r[0]  # on stocke les données du client
             display_message(message=r[2], type_=r[1])  # on affiche le message de réponse provenant de l'API
+        if r[1] == 'error':
+            return False
+        else:
+            return True
 
 
 def display_customer_predict(element):
@@ -309,14 +303,8 @@ def create_predict_section(element):
     :param element: Un élément Streamlit dans lequel ajouter d'autres éléments.
     :return: Les éléments "container" qui vont contenir les données et la prédiction du client
     """
-    main_container = element.container()
-    if "customer_id" in st.session_state:
-        main_container.subheader(
-            f"Voici les données et les résultats du client #{int(st.session_state['customer_id'])}")
-    else:
-        main_container.subheader(f"Voici les données et les résultats du client demandé.")
 
-    col1, col2 = main_container.columns((3, 5))
+    col1, col2 = element.columns((3, 5))
 
     container_data = col1.container()
     container_predict = col2.container()
@@ -333,8 +321,8 @@ def create_interp_section(element):
     :return: Les éléments "expander" qui vont contenir les parties sur l'interprétabilité.
     """
     main_container = element.container()
-    if "customer_id" in st.session_state:  # Un client a déjà été demandé
-        main_container.subheader(f"Quelles sont les données influentes globalement et pour le"
+    if st.session_state['customer_id'] != "":  # Un client a déjà été demandé
+        main_container.subheader(f"Quelles sont les données qui expliquent la décision pour le"
                                  f" client #{int(st.session_state['customer_id'])} ?")
     else:
         main_container.empty()
@@ -363,19 +351,25 @@ def dashboard_layout():
     )  # Un peu de style CSS pour garantir un fond blanc sur les expander (graphiques SHAP mieux intégrés !)
     create_header_section(header_section)
 
+    if 'customer_id' not in st.session_state:
+        create_session_key('customer_id', '')
+
     try:
-        container_data, container_predict = create_predict_section(predict_section)
         display_customer_selectbox()
         display_threshold_slider()
-        display_customer_data(container_data)
-        display_feature_selectbox()
-        new_threshold, new_customer_id = display_customer_predict(container_predict)
-        expander_local, expander_global, expander_feat = create_interp_section(interp_section)
-        new_customer_id = display_interp_local(expander_local)
-        display_interp_global(expander_global)
-        display_interp_feature(expander_feat)
-        st.session_state['used_customer_id'] = new_customer_id  # Mise à jour de l'identifiant du client précédent
-        st.session_state['used_threshold'] = new_threshold  # Mise à jour du seuil précédent
+        container_data, container_predict = create_predict_section(predict_section)
+
+        if st.session_state['customer_id'] != "":
+            is_data_ok = display_customer_data(container_data)
+            if is_data_ok:
+                display_feature_selectbox()
+                new_threshold, new_customer_id = display_customer_predict(container_predict)
+                expander_local, expander_global, expander_feat = create_interp_section(interp_section)
+                new_customer_id = display_interp_local(expander_local)
+                display_interp_global(expander_global)
+                display_interp_feature(expander_feat)
+                st.session_state['used_customer_id'] = new_customer_id  # Mise à jour de l'identifiant du client précédent
+                st.session_state['used_threshold'] = new_threshold  # Mise à jour du seuil précédent
     except Exception as e:
         display_message(message=f"Quelque chose s'est mal passé. Un problème a pu survenir avec l'API. Erreur : {e}",
                         type_='error', wait=10)
